@@ -2,8 +2,8 @@
 ## Running the Tool:
    Open a terminal on your Linux system.
         Navigate to the directory where you have saved the shell script using the cd command.
-        Make sure the script has executable permissions using the command: chmod +x wifiripper.sh
-        Run the script using: ./wifiripper.sh
+        Make sure the script has executable permissions using the command: chmod +x WifiRipper.sh
+        Run the script using: ./WifiRipper.sh
 
 ## Installation Check:
   The script will check if aircrack-ng is installed. If not, it will attempt to install it.
