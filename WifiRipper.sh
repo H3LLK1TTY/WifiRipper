@@ -4,7 +4,7 @@ if ! command -v aircrack-ng &> /dev/null; then
     echo "aircrack-ng is not installed. Installing..."
     apt-get update
     apt-get install -y aircrack-ng
-    echo "aircrack-ng installed."
+    echo "aircrack-ng installed."                        # App Version 2.4.1
 else
     echo "checking for aircrack-ng..."
     echo "aircrack-ng is already installed."
@@ -27,8 +27,8 @@ show_loading 5
 echo -e "\033[1;92m"
 clear
 echo "Loading complete!"
-sleep 2
 clear
+
 if [[ $EUID -ne 0 ]]; then
    echo "This script must be run as root."
    exit 1
@@ -44,37 +44,44 @@ function show_interfaces() {
   echo "       MAC Address Changer"
   echo -e "       ------------------------------------------------------------------------------------------------------------------------\n"
   echo -e "           Connected Network Interfaces:\n"
+  echo -e "           0. Go Back\n"
   interfaces=($(ip link show | awk '/^[0-9]+:/ {print substr($2, 1, length($2)-1)}' | grep -v lo))
   for ((i=0; i<${#interfaces[@]}; i++)); do
-    echo "           $((i+1)). ${interfaces[i]}"
+    echo -e "           $((i+1)). ${interfaces[i]}\n"
   done
 }
 
 function change_mac_address_random() {
-  echo -e "\n"
-  read -p "           Enter the number corresponding to the network interface to change the MAC address: " num
+  while true; do
+    
+    read -p "           Enter the number corresponding to the network interface to change the MAC address: " num
+    echo "           Please wait. Loading..."
+    # Validate the input
+    re='^[0-9]+$'
+    if ! [[ $num =~ $re ]]; then
+        echo "           Invalid input. Please enter a valid number corresponding to the interface."
+        continue
+    fi
 
-  # Validate the input
-  re='^[0-9]+$'
-  if ! [[ $num =~ $re ]]; then
-    echo "           Invalid input. Please enter a valid number corresponding to the interface."
-    return
-  fi
+    if (( num == 0 )); then
+        break
+    elif (( num < 1 || num > ${#interfaces[@]} )); then
+        echo "           Invalid input. Please enter a number within the range of available interfaces."
+        continue
+    fi
 
-  if (( num < 1 || num > ${#interfaces[@]} )); then
-    echo "           Invalid input. Please enter a number within the range of available interfaces."
-    return
-  fi
+    selected_interface=${interfaces[$((num-1))]}
+    new_mac=$(printf "%02X:%02X:%02X:%02X:%02X:%02X" $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
+
+    sudo ip link set dev $selected_interface down
+    sudo ip link set dev $selected_interface address $new_mac
+    sudo ip link set dev $selected_interface up 
+    echo "           MAC address for $selected_interface changed to $new_mac."
+    echo "           Redirecting in 5s"
+    sleep 5
+    break    
+done
   
-  selected_interface=${interfaces[$((num-1))]}
-  new_mac=$(printf "%02X:%02X:%02X:%02X:%02X:%02X" $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)) $((RANDOM%256)))
-
-  sudo ip link set dev $selected_interface down
-  sudo ip link set dev $selected_interface address $new_mac
-  sudo ip link set dev $selected_interface up
-
-  echo -e "           MAC address for $selected_interface changed to $new_mac.\n"
-  echo "           Redirecting in 5s"
 }
 
 function readme() {
@@ -114,6 +121,7 @@ function deauthenticate() {
         gnome-terminal -- bash -c "aireplay-ng -0 $deauth_packets -a $mac -D $interface; read -p 'Press Enter to close this terminal window...' sudo airmon-ng stop $interface "
     done
     echo -e "\n           Deauthentication completed for selected MAC addresses."
+    echo -e "\n           Switching $interface to Managed Mode"
 }
 
 function scan_and_deauthenticate() {
@@ -167,8 +175,8 @@ function scan_and_deauthenticate() {
             airodump-ng $interface
 
             while true; do
-                echo -e "\n\n"
-                echo -e "\033[1;92m       ------------------------------------------------------------------------------------------------------------------------\n"
+                echo -e "\n\n\033[1;92m       Deauthentication Prompt"
+                echo -e "       ------------------------------------------------------------------------------------------------------------------------\n"
                 read -p "           Enter the number of MAC addresses to deauthenticate: " count
                 if [[ $count =~ ^[0-9]+$ ]]; then
                     break
@@ -218,6 +226,8 @@ function scan_and_deauthenticate() {
                 read -p "           Press X to exit to menu: " repeat
                 case $repeat in
                     [Qq]* )
+                        echo -e "\n           Please wait for 5sec"
+                        sleep 5
                         sudo airmon-ng stop $interface
                         clear
                         break ;;
@@ -263,7 +273,6 @@ while true; do
         2 ) clear
             show_interfaces
             change_mac_address_random
-            sleep 5
             clear
             ;;
         3 ) clear
@@ -275,10 +284,11 @@ while true; do
         0 )
             clear
             echo "Exiting."
+            sudo service NetworkManager restart
             echo "See you soon :)"
             exit ;;
         * )
-            echo "Invalid choice. Please enter a valid number."
+            echo "           Invalid choice. Please enter a valid number."
             ;;
     esac
 done
