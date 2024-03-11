@@ -6,6 +6,8 @@ Script Name: WifiRipper - Automated Wi-Fi Deauthentication Script
 "WifiRipper" is a powerful shell script designed to automate the process of scanning nearby Wi-Fi networks and performing deauthentication attacks on multiple networks. This script is intended for educational and testing purposes only and should be used responsibly and with proper authorization of network admins.
 
 ## Features:
+![Screenshot from 2024-03-12 00-56-52](https://github.com/H3LLKY4T/WifiRipper/assets/141442170/7be68bcd-b819-4141-929b-6996eedc407d)
+
 
 Interface Selection: The script allows the user to choose a wireless network interface from the available options on their system. This ensures that the user is targeting the correct wireless interface for network scanning and deauthentication.
 
